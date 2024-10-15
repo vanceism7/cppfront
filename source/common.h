@@ -997,6 +997,7 @@ struct error_entry
 {
     source_position where;
     std::string     msg;
+    std::string     symbol;
     bool            internal = false;
     bool            fallback = false;   // only emit this message if there was nothing better
 
@@ -1008,6 +1009,20 @@ struct error_entry
     )
         : where{w}
         , msg{m}
+        , internal{i}
+        , fallback{f}
+    { }
+
+    error_entry(
+        source_position  w,
+        std::string_view m,
+        std::string_view s,
+        bool             i = false,
+        bool             f = false
+    )
+        : where{w}
+        , msg{m}
+        , symbol{s}
         , internal{i}
         , fallback{f}
     { }
