@@ -20,6 +20,14 @@ static cpp2::cmdline_processor::register_flag cmd_debug(
     []{ flag_debug_output = true; }
 );
 
+static auto flag_diagnostics_output = false;
+static cpp2::cmdline_processor::register_flag cmd_diagnostics(
+    9,
+    "diagnostics",
+    "Emit compiler diagnostics output",
+    []{ flag_diagnostics_output = true; }
+);
+
 static auto flag_quiet = false;
 static cpp2::cmdline_processor::register_flag cmd_quiet(
     9,
@@ -165,9 +173,15 @@ auto main(
             exit_status = EXIT_FAILURE;
         }
 
-        //  And, if requested, the debug information
+        //  if requested, the debug information
         if (flag_debug_output) {
             c.debug_print();
+        }
+
+        //  And, if requested, the diagnostics information
+        if( flag_diagnostics_output) {
+            c.diagnostics_print();
+            exit_status = EXIT_SUCCESS;
         }
     }
 

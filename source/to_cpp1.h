@@ -14,6 +14,7 @@
 #define CPP2_TO_CPP1_H
 
 #include "sema.h"
+#include "diagnostics.h"
 #include <filesystem>
 
 namespace cpp2 {
@@ -7194,6 +7195,18 @@ public:
             auto out_symbols = std::ofstream{ sourcefile+"-symbols" };
             sema.debug_print  ( out_symbols );
         }
+    }
+
+
+
+    //-----------------------------------------------------------------------
+    //  diagnostics_print
+    //
+    auto diagnostics_print() const  
+        -> void
+    {
+        auto diagnostics = get_diagnostics(sema);
+        print_diagnostics(std::cout, diagnostics);
     }
 
 
