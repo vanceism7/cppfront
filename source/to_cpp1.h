@@ -7203,7 +7203,7 @@ public:
     auto diagnostics_print() const  
         -> void
     {
-        auto diagnostics = get_diagnostics(sema);
+        auto diagnostics = get_diagnostics(sourcefile, sema);
         print_diagnostics(std::cout, diagnostics);
     }
 
