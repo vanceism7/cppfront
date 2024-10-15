@@ -937,7 +937,8 @@ private:
                     errors.emplace_back(
                         sym->identifier->position(),
                         "local variable " + sym->identifier->to_string()
-                            + " cannot be used in its own initializer");
+                            + " cannot be used in its own initializer",
+                        sym->identifier->to_string());
                 }
             }
 
@@ -1193,7 +1194,8 @@ private:
                     errors.emplace_back(
                         t->position(),
                         "local variable " + name
-                        + " cannot be initialized inside a loop"
+                        + " cannot be initialized inside a loop",
+                        name
                     );
                     return false;
                 }
@@ -1222,7 +1224,8 @@ private:
                         sym.identifier->position(),
                         "local variable " + sym.identifier->to_string()
                             + " cannot have the same name as an uninitialized"
-                              " variable in the same function");
+                              " variable in the same function",
+                        sym.identifier->to_string());
                 }
             }
 
@@ -1239,7 +1242,8 @@ private:
                         sym.identifier->position(),
                         "local variable " + name
                             + " must be initialized before " + sym.identifier->to_string()
-                            + " (local variables must be initialized in the order they are declared)"
+                            + " (local variables must be initialized in the order they are declared)",
+                        name
                     );
                     return false;
                 }
@@ -1259,7 +1263,8 @@ private:
                             errors.emplace_back(
                                 sym.identifier->position(),
                                 "local variable " + name
-                                    + " is used before it was initialized");
+                                    + " is used before it was initialized",
+                                name);
                         }
                         return sym.standalone_assignment_to;
                     }
@@ -1279,7 +1284,8 @@ private:
                                 errors.emplace_back(
                                     sym.identifier->position(),
                                     "local variable " + name
-                                        + " is used in a condition before it was initialized");
+                                        + " is used in a condition before it was initialized",
+                                    name);
                             }
                             return sym.standalone_assignment_to;
                         }
@@ -1309,7 +1315,8 @@ private:
                             errors.emplace_back(
                                 sym.identifier->position(),
                                 "local variable " + name
-                                    + " is used in a branch before it was initialized");
+                                    + " is used in a branch before it was initialized",
+                                name);
                         }
                         selection_stack.back().branches.back().result = sym.standalone_assignment_to;
 
@@ -1390,7 +1397,8 @@ private:
                         errors.emplace_back(
                             decl->identifier->position(),
                             "local variable " + name
-                                    + " must be initialized on both branches or neither branch");
+                                    + " must be initialized on both branches or neither branch",
+                            name);
 
                         assert (symbols[selection_stack.back().pos].sym.index() == symbol::active::selection);
                         auto const& sym = std::get<symbol::active::selection>(symbols[pos].sym);
@@ -1399,7 +1407,8 @@ private:
                             "\"" + sym.selection->identifier->to_string()
                                 + "\" initializes " + name
                                 + " on:" + true_branches
-                                + "\nbut not on:" + false_branches
+                                + "\nbut not on:" + false_branches,
+                            sym.selection->identifier->to_string()
                         );
 
                         return false;
@@ -1446,7 +1455,8 @@ private:
         errors.emplace_back(
             decl->identifier->position(),
             name
-            + " - variable must be initialized on every branch path");
+            + " - variable must be initialized on every branch path",
+            name);
         return false;
     }
 
