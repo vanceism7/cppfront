@@ -181,7 +181,6 @@ auto main(
         //  And, if requested, the diagnostics information
         if( flag_diagnostics_output) {
             c.diagnostics_print();
-            exit_status = EXIT_SUCCESS;
         }
     }
 
