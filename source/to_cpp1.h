@@ -7205,8 +7205,12 @@ public:
     auto diagnostics_print() const  
         -> void
     {
-        auto diagnostics = get_diagnostics(sourcefile, sema);
-        print_diagnostics(std::cout, diagnostics);
+        if (source_loaded) 
+        {
+            auto out_file  = std::ofstream{ sourcefile+"-diagnostics"  };
+            auto diagnostics = get_diagnostics(sourcefile, sema);
+            print_diagnostics(out_file, diagnostics);
+        }
     }
 
 
