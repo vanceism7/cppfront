@@ -33,14 +33,7 @@ namespace cpp2 {
         auto operator<=>(const diagnostic_symbol_t& other) const = default;
     };
 
-    /** A type that holds info about an error in the source */
-    struct diagnostic_error_t {
-        std::string             file;
-        std::string             symbol;
-        std::string             msg;
-        cpp2::source_position   position;
-    };
-
+    /** A type denoting a range of text in the source */
     struct diagnostic_scope_range_t {
         cpp2::source_position   start;
         cpp2::source_position   end;
@@ -50,7 +43,7 @@ namespace cpp2 {
     /** The main diagnostics type used to communicate compiler results to external programs */
     struct diagnostics_t {
         std::set<diagnostic_symbol_t>   symbols;
-        std::vector<diagnostic_error_t> errors;
+        std::vector<cpp2::error_entry>  errors;
         diagnostic_scope_map            scope_map;
     };
 
@@ -79,32 +72,16 @@ namespace cpp2 {
             sym->declaration->position()
         };
     } 
-
-    /** Read a error_entry into a diagnostic_error_t */
-    auto read_error(std::string sourcefile, cpp2::error_entry& e) -> diagnostic_error_t {
-        return diagnostic_error_t{
-            sourcefile,
-            e.symbol, 
-            e.msg,
-            e.where 
-        };
-    } 
     
     /** Takes a filename + `sema` and aggregates all the diagnostics info */
-    auto get_diagnostics(std::string sourcefile, const cpp2::sema& sema) -> diagnostics_t {
+    auto get_diagnostics(const cpp2::sema& sema) -> diagnostics_t {
         std::set<diagnostic_symbol_t>   symbols     = {};
-        std::vector<diagnostic_error_t> errors      = {};
         diagnostic_scope_map            scope_map   = {};
 
         // Gather together all of the identifier declarations, along with their position
         for (auto& d : sema.declaration_of) {
             symbols.emplace(read_symbol(d.second.sym));
         } 
-
-        // Gather together all of our errors into a simple error type
-        for(auto& e : sema.errors) {
-            errors.emplace_back(read_error(sourcefile, e));
-        }
 
         // Gather together the scope ranges for all of our function-like declarations
         // Keep a stack of all of the scopes we've seen
@@ -142,7 +119,7 @@ namespace cpp2 {
             }
         }
 
-        return diagnostics_t{symbols, errors, scope_map};
+        return diagnostics_t{symbols, sema.errors, scope_map};
     }
 
     /** Sanitize a string to make sure its json parsable */
@@ -162,7 +139,9 @@ namespace cpp2 {
     }
 
     /** Prints the compiler diagnostics to an ostream (either stdout or file) */
-    auto print_diagnostics(std::ostream &o, diagnostics_t diagnostics) -> void {
+    auto print_diagnostics(std::ostream &o, std::string filename, diagnostics_t diagnostics) -> void {
+
+        // Print out symbol info to json
         o << "{\"symbols\": [";
         for(auto& d : diagnostics.symbols) {
             o 
@@ -173,16 +152,21 @@ namespace cpp2 {
                 << "\"colno\": " << d.position.colno << "},";
         }
         
+        // Print out error entries to json
         o << "], \"errors\": [";
         for(auto& e : diagnostics.errors) {
             o
-                << "{\"file\": \"" << e.file << "\", "
+                << "{\"file\": \"" << filename << "\", "
                 << "\"symbol\": \"" << e.symbol << "\", "
-                << "\"lineno\": " << e.position.lineno << ", "
-                << "\"colno\": " << e.position.colno << ", "
+                << "\"lineno\": " << e.where.lineno << ", "
+                << "\"colno\": " << e.where.colno << ", "
                 << "\"msg\": \"" << sanitize_for_json(e.msg) << "\"},";
         }
 
+        // Print out the our scope's source ranges as a map/object where:
+        // keys   - are the scope symbol names,
+        // values - are their source range
+        //
         o << "], \"scopes\": {";
         for(auto& s : diagnostics.scope_map) {
             o
