@@ -7208,8 +7208,8 @@ public:
         if (source_loaded) 
         {
             auto out_file  = std::ofstream{ sourcefile+"-diagnostics"  };
-            auto diagnostics = get_diagnostics(sourcefile, sema);
-            print_diagnostics(out_file, diagnostics);
+            auto diagnostics = get_diagnostics(sema);
+            print_diagnostics(out_file, sourcefile, diagnostics);
         }
     }
 
