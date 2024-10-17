@@ -157,7 +157,7 @@ namespace cpp2 {
     // Main Functions //
     //----------------//
 
-    /** Takes a filename + `sema` and aggregates all the diagnostics info */
+    /** Takes a `sema` and aggregates all the diagnostics info */
     auto get_diagnostics(const cpp2::sema& sema) -> diagnostics_t {
         std::set<diagnostic_symbol_t>   symbols     = {};
         diagnostic_scope_map            scope_map   = make_scope_map(sema);
