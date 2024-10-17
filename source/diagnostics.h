@@ -23,6 +23,10 @@
 
 namespace cpp2 {
 
+    //------------------//
+    // Type definitions //
+    //------------------//
+
     /** A type that holds info about a declaration/symbol in the source */
     struct diagnostic_symbol_t {
         std::string             symbol;
@@ -47,6 +51,10 @@ namespace cpp2 {
         diagnostic_scope_map            scope_map;
     };
 
+    //------------------//
+    // Helper Functions //
+    //------------------//
+
     /** Determine the kind of declaration we have */
     auto get_declaration_kind(const cpp2::declaration_node* decl ) -> std::string {
         if (decl->is_function()) return "function";
@@ -65,53 +73,60 @@ namespace cpp2 {
 
     /** Read a declaration_sym into a diagnostic_symbol_t */
     auto read_symbol(const cpp2::declaration_sym* sym) -> diagnostic_symbol_t {
-        return diagnostic_symbol_t{
-            sym->identifier->to_string(),
-            get_declaration_kind(sym->declaration),
-            get_decl_name(sym->declaration->get_parent()),
-            sym->declaration->position()
-        };
+        return std::move(
+            diagnostic_symbol_t{
+                sym->identifier->to_string(),
+                get_declaration_kind(sym->declaration),
+                get_decl_name(sym->declaration->get_parent()),
+                sym->declaration->position()
+            }
+        );
     } 
-    
-    /** Takes a filename + `sema` and aggregates all the diagnostics info */
-    auto get_diagnostics(const cpp2::sema& sema) -> diagnostics_t {
-        std::set<diagnostic_symbol_t>   symbols     = {};
-        diagnostic_scope_map            scope_map   = {};
 
-        // Gather together all of the identifier declarations, along with their position
-        for (auto& d : sema.declaration_of) {
-            symbols.emplace(read_symbol(d.second.sym));
-        } 
-
-        // Gather together the scope ranges for all of our function-like declarations
-        // Keep a stack of all of the scopes we've seen
+    /** Gather together the scope ranges for all of our scope-owning declarations */
+    auto make_scope_map(const cpp2::sema& sema) -> diagnostic_scope_map {
+        diagnostic_scope_map result = {};
         auto current = std::vector<std::string>{};
+
         for(auto& s : sema.symbols) 
         {
             switch (s.sym.index()) 
             {
+                // If the symbol is a declaration with its own scope, 
+                // we push the name to our scope stack
+                //
                 break; case symbol::active::declaration: 
                 {
                     auto const& sym = std::get<symbol::active::declaration>(s.sym);
                     assert (sym.declaration);
                     if( sym.declaration->is_function() || sym.declaration->is_namespace() ) {
                         if( sym.identifier == nullptr ) break;
-
-                        auto name = sym.identifier->to_string();
-                        auto pos = sym.position();
-                        current.push_back(name);
-                        scope_map[name] = diagnostic_scope_range_t{pos, pos};
+                        current.push_back(sym.identifier->to_string());
                     }
                 }
 
+                // If the symbol is a scope symbol (open/close brace), we save that position
+                // in our scope map at which ever scope is the most current in the stack.
+                // When we encounter a closing brace, we pop the top scope off the stack
                 break; case symbol::active::compound: 
                 {
                     auto const& sym = std::get<symbol::active::compound>(s.sym);
-                    if (!sym.start && sym.kind_ == sym.is_scope && sym.compound != nullptr) 
-                    {
+                    if (sym.kind_ == sym.is_scope) {
+
+                        // Grab our current scope
                         auto name = current.back();
-                        scope_map[name].end = sym.compound->close_brace;
-                        current.pop_back();
+
+                        // Found an opening brace
+                        if (sym.start) {
+                            auto pos = sym.compound->open_brace;
+                            result[name] = diagnostic_scope_range_t{pos, pos};
+                        }
+                        // Found a closing brace
+                        else 
+                        {
+                            result[name].end = sym.compound->close_brace;
+                            current.pop_back();
+                        }
                     }
                 }
 
@@ -119,7 +134,7 @@ namespace cpp2 {
             }
         }
 
-        return diagnostics_t{symbols, sema.errors, scope_map};
+        return std::move(result);
     }
 
     /** Sanitize a string to make sure its json parsable */
@@ -136,6 +151,23 @@ namespace cpp2 {
         cpp2::replace_all(result, "\t", "\\t");   // Escape tab
     
         return result;
+    }
+
+    //----------------//
+    // Main Functions //
+    //----------------//
+
+    /** Takes a filename + `sema` and aggregates all the diagnostics info */
+    auto get_diagnostics(const cpp2::sema& sema) -> diagnostics_t {
+        std::set<diagnostic_symbol_t>   symbols     = {};
+        diagnostic_scope_map            scope_map   = make_scope_map(sema);
+
+        // Gather together all of the identifier declarations, along with their position
+        for (auto& d : sema.declaration_of) {
+            symbols.emplace(read_symbol(d.second.sym));
+        } 
+
+        return diagnostics_t{symbols, sema.errors, scope_map};
     }
 
     /** Prints the compiler diagnostics to an ostream (either stdout or file) */
