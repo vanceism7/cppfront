@@ -25,22 +25,20 @@ namespace cpp2 {
 
     /** A type that holds info about a declaration/symbol in the source */
     struct diagnostic_symbol_t {
-        std::string                 symbol;
-        std::string                 kind;
-        std::string                 scope;
-        cpp2::lineno_t              lineno;
-        cpp2::colno_t               colno;
+        std::string             symbol;
+        std::string             kind;
+        std::string             scope;
+        cpp2::source_position   position;
 
         auto operator<=>(const diagnostic_symbol_t& other) const = default;
     };
 
     /** A type that holds info about an error in the source */
     struct diagnostic_error_t {
-        std::string     file;
-        std::string     symbol;
-        std::string     msg;
-        cpp2::lineno_t  lineno;
-        cpp2::colno_t   colno;
+        std::string             file;
+        std::string             symbol;
+        std::string             msg;
+        cpp2::source_position   position;
     };
 
     struct diagnostic_scope_range_t {
@@ -51,9 +49,9 @@ namespace cpp2 {
 
     /** The main diagnostics type used to communicate compiler results to external programs */
     struct diagnostics_t {
-        std::set<diagnostic_symbol_t>    symbols;
-        std::vector<diagnostic_error_t>     errors;
-        diagnostic_scope_map                scope_map;
+        std::set<diagnostic_symbol_t>   symbols;
+        std::vector<diagnostic_error_t> errors;
+        diagnostic_scope_map            scope_map;
     };
 
     /** Determine the kind of declaration we have */
@@ -78,8 +76,7 @@ namespace cpp2 {
             sym->identifier->to_string(),
             get_declaration_kind(sym->declaration),
             get_decl_name(sym->declaration->get_parent()),
-            sym->declaration->position().lineno,
-            sym->declaration->position().colno
+            sym->declaration->position()
         };
     } 
 
@@ -89,16 +86,15 @@ namespace cpp2 {
             sourcefile,
             e.symbol, 
             e.msg,
-            e.where.lineno, 
-            e.where.colno
+            e.where 
         };
     } 
     
     /** Takes a filename + `sema` and aggregates all the diagnostics info */
     auto get_diagnostics(std::string sourcefile, const cpp2::sema& sema) -> diagnostics_t {
-        std::set<diagnostic_symbol_t>    symbols = {};
-        std::vector<diagnostic_error_t>     errors = {};
-        diagnostic_scope_map                scope_map = {};
+        std::set<diagnostic_symbol_t>   symbols     = {};
+        std::vector<diagnostic_error_t> errors      = {};
+        diagnostic_scope_map            scope_map   = {};
 
         // Gather together all of the identifier declarations, along with their position
         for (auto& d : sema.declaration_of) {
@@ -173,8 +169,8 @@ namespace cpp2 {
                 << "{ \"symbol\": \"" << d.symbol << "\", "
                 << "\"scope\": \"" << d.scope << "\", "
                 << "\"kind\": \"" << d.kind << "\", "
-                << "\"lineno\": " << d.lineno << ", "
-                << "\"colno\": " << d.colno << "},";
+                << "\"lineno\": " << d.position.lineno << ", "
+                << "\"colno\": " << d.position.colno << "},";
         }
         
         o << "], \"errors\": [";
@@ -182,8 +178,8 @@ namespace cpp2 {
             o
                 << "{\"file\": \"" << e.file << "\", "
                 << "\"symbol\": \"" << e.symbol << "\", "
-                << "\"lineno\": " << e.lineno << ", "
-                << "\"colno\": " << e.colno << ", "
+                << "\"lineno\": " << e.position.lineno << ", "
+                << "\"colno\": " << e.position.colno << ", "
                 << "\"msg\": \"" << sanitize_for_json(e.msg) << "\"},";
         }
 
