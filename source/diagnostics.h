@@ -73,14 +73,12 @@ namespace cpp2 {
 
     /** Read a declaration_sym into a diagnostic_symbol_t */
     auto read_symbol(const cpp2::declaration_sym* sym) -> diagnostic_symbol_t {
-        return std::move(
-            diagnostic_symbol_t{
-                sym->identifier->to_string(),
-                get_declaration_kind(sym->declaration),
-                get_decl_name(sym->declaration->get_parent()),
-                sym->declaration->position()
-            }
-        );
+        return diagnostic_symbol_t{
+            sym->identifier->to_string(),
+            get_declaration_kind(sym->declaration),
+            get_decl_name(sym->declaration->get_parent()),
+            sym->declaration->position()
+        };
     } 
 
     /** Gather together the scope ranges for all of our scope-owning declarations */
@@ -121,7 +119,7 @@ namespace cpp2 {
             }
         }
 
-        return std::move(result);
+        return result;
     }
 
     /** Sanitize a string to make sure its json parsable */
