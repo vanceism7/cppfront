@@ -20,7 +20,6 @@
 
 #include "sema.h"
 #include <filesystem>
-#include <unordered_set>
 
 namespace cpp2 {
 
@@ -28,7 +27,7 @@ namespace cpp2 {
     struct diagnostic_symbol_t {
         std::string                 symbol;
         std::string                 kind;
-        std::vector<std::string>    scope;
+        std::string                 scope;
         cpp2::lineno_t              lineno;
         cpp2::colno_t               colno;
 
@@ -52,7 +51,7 @@ namespace cpp2 {
 
     /** The main diagnostics type used to communicate compiler results to external programs */
     struct diagnostics_t {
-        std::vector<diagnostic_symbol_t>    symbols;
+        std::set<diagnostic_symbol_t>    symbols;
         std::vector<diagnostic_error_t>     errors;
         diagnostic_scope_map                scope_map;
     };
@@ -68,22 +67,9 @@ namespace cpp2 {
 
     /** Get the identifier/name of the declaration */
     auto get_decl_name(const cpp2::declaration_node* decl) -> std::string {
-        if (decl == nullptr) return std::string();
+        if (decl == nullptr || decl->identifier == nullptr ) return std::string();
 
         return decl->identifier->to_string();
-    }
-
-    /** Get all parent scopes of the declaration */
-    auto get_decl_scope(const cpp2::declaration_node* decl) -> std::vector<std::string> {
-        std::vector<std::string> result = {};
-        auto parent = decl->get_parent();
-        
-        while(parent != nullptr) {
-            result.emplace_back(parent->identifier->to_string());
-            parent = parent->get_parent();
-        }
-
-        return result;
     }
 
     /** Read a declaration_sym into a diagnostic_symbol_t */
@@ -91,7 +77,7 @@ namespace cpp2 {
         return diagnostic_symbol_t{
             sym->identifier->to_string(),
             get_declaration_kind(sym->declaration),
-            get_decl_scope(sym->declaration),
+            get_decl_name(sym->declaration->get_parent()),
             sym->declaration->position().lineno,
             sym->declaration->position().colno
         };
@@ -110,13 +96,13 @@ namespace cpp2 {
     
     /** Takes a filename + `sema` and aggregates all the diagnostics info */
     auto get_diagnostics(std::string sourcefile, const cpp2::sema& sema) -> diagnostics_t {
-        std::vector<diagnostic_symbol_t>    symbols = {}; //get_symbols(sema);
+        std::set<diagnostic_symbol_t>    symbols = {};
         std::vector<diagnostic_error_t>     errors = {};
         diagnostic_scope_map                scope_map = {};
 
         // Gather together all of the identifier declarations, along with their position
         for (auto& d : sema.declaration_of) {
-            symbols.emplace_back(read_symbol(d.second.sym));
+            symbols.emplace(read_symbol(d.second.sym));
         } 
 
         // Gather together all of our errors into a simple error type
@@ -179,25 +165,13 @@ namespace cpp2 {
         return result;
     }
 
-    auto print_scope(std::vector<std::string> scope) -> std::string {
-        std::string result = "[";
-
-        for (size_t i = 0; i < scope.size(); ++i) {
-            auto ending = i == scope.size()-1 ? "\"" : "\", ";
-            result = result + "\"" + scope[i] + ending;
-        }
-        result += "]";
-
-        return result;
-    }
-
     /** Prints the compiler diagnostics to an ostream (either stdout or file) */
     auto print_diagnostics(std::ostream &o, diagnostics_t diagnostics) -> void {
         o << "{\"symbols\": [";
         for(auto& d : diagnostics.symbols) {
             o 
                 << "{ \"symbol\": \"" << d.symbol << "\", "
-                << "\"scope\": " << print_scope(d.scope) << ", "
+                << "\"scope\": \"" << d.scope << "\", "
                 << "\"kind\": \"" << d.kind << "\", "
                 << "\"lineno\": " << d.lineno << ", "
                 << "\"colno\": " << d.colno << "},";
