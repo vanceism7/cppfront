@@ -139,7 +139,7 @@ namespace cpp2 {
     }
 
     /** Prints the compiler diagnostics to an ostream (either stdout or file) */
-    auto print_diagnostics(std::ostream &o, std::string filename, diagnostics_t diagnostics) -> void {
+    auto print_diagnostics(std::ostream &o, diagnostics_t diagnostics) -> void {
 
         // Print out symbol info to json
         o << "{\"symbols\": [";
@@ -156,8 +156,7 @@ namespace cpp2 {
         o << "], \"errors\": [";
         for(auto& e : diagnostics.errors) {
             o
-                << "{\"file\": \"" << filename << "\", "
-                << "\"symbol\": \"" << e.symbol << "\", "
+                << "{\"symbol\": \"" << e.symbol << "\", "
                 << "\"lineno\": " << e.where.lineno << ", "
                 << "\"colno\": " << e.where.colno << ", "
                 << "\"msg\": \"" << sanitize_for_json(e.msg) << "\"},";
