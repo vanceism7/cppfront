@@ -85,15 +85,15 @@ namespace cpp2 {
 
     /** Gather together the scope ranges for all of our scope-owning declarations */
     auto make_scope_map(const cpp2::sema& sema) -> diagnostic_scope_map {
-        diagnostic_scope_map result = {};
-        auto current = std::vector<std::string>{};
+        diagnostic_scope_map result  = {};
+        auto current = std::string();
 
         for(auto& s : sema.symbols) 
         {
             switch (s.sym.index()) 
             {
                 // If the symbol is a declaration with its own scope, 
-                // we push the name to our scope stack
+                // we save the name of in `current`. 
                 //
                 break; case symbol::active::declaration: 
                 {
@@ -101,32 +101,19 @@ namespace cpp2 {
                     assert (sym.declaration);
                     if( sym.declaration->is_function() || sym.declaration->is_namespace() ) {
                         if( sym.identifier == nullptr ) break;
-                        current.push_back(sym.identifier->to_string());
+                        current = sym.identifier->to_string();
                     }
                 }
 
-                // If the symbol is a scope symbol (open/close brace), we save that position
-                // in our scope map at which ever scope is the most current in the stack.
-                // When we encounter a closing brace, we pop the top scope off the stack
+                // If the symbol is a scope symbol, we save the position of where
+                // the scope opens and closes in our scope map at `current`.
                 break; case symbol::active::compound: 
                 {
                     auto const& sym = std::get<symbol::active::compound>(s.sym);
-                    if (sym.kind_ == sym.is_scope) {
-
-                        // Grab our current scope
-                        auto name = current.back();
-
-                        // Found an opening brace
-                        if (sym.start) {
-                            auto pos = sym.compound->open_brace;
-                            result[name] = diagnostic_scope_range_t{pos, pos};
-                        }
-                        // Found a closing brace
-                        else 
-                        {
-                            result[name].end = sym.compound->close_brace;
-                            current.pop_back();
-                        }
+                    if (sym.kind_ == sym.is_scope && sym.start) {
+                        auto c = sym.compound;
+                        std::cout << c->position().to_string() << ", " << c->close_brace.to_string();
+                        result[current] = diagnostic_scope_range_t{c->open_brace, c->close_brace};
                     }
                 }
 
@@ -159,8 +146,8 @@ namespace cpp2 {
 
     /** Takes a `sema` and aggregates all the diagnostics info */
     auto get_diagnostics(const cpp2::sema& sema) -> diagnostics_t {
-        std::set<diagnostic_symbol_t>   symbols     = {};
-        diagnostic_scope_map            scope_map   = make_scope_map(sema);
+        std::set<diagnostic_symbol_t> symbols = {};
+        diagnostic_scope_map scope_map = make_scope_map(sema);
 
         // Gather together all of the identifier declarations, along with their position
         for (auto& d : sema.declaration_of) {
