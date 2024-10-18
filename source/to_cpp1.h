@@ -4419,7 +4419,8 @@ public:
         {
             errors.emplace_back(
                 decl.position(),
-                "a type's implementation may not declare a name that is the same as (i.e., shadows) a type scope name - for example, a type scope function's local variable may not have the same as one of the type's members"
+                "a type's implementation may not declare a name that is the same as (i.e., shadows) a type scope name - for example, a type scope function's local variable may not have the same as one of the type's members",
+                decl.identifier->to_string()
             );
             return false;
         }
