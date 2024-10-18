@@ -71,19 +71,40 @@ namespace cpp2 {
         return decl->identifier->to_string();
     }
 
+    /** 
+     * Put a dot between strings if `scope` isn't empty 
+     * Used to create fully qualified scope names
+     */
+    auto dot(std::string scope) {
+        return scope.empty() ? "" : ".";
+    }
+
+    /** Get all parent scopes of the declaration */
+    auto get_decl_scope(const cpp2::declaration_node* decl) -> std::string {
+        std::string result = {};
+        auto parent = decl->get_parent();
+        
+        while(parent != nullptr) {
+            result = parent->identifier->to_string() + dot(result) + result;
+            parent = parent->get_parent();
+        }
+        return result;
+    }
+
     /** Read a declaration_sym into a diagnostic_symbol_t */
     auto read_symbol(const cpp2::declaration_sym* sym) -> diagnostic_symbol_t {
         return diagnostic_symbol_t{
             sym->identifier->to_string(),
             get_declaration_kind(sym->declaration),
-            get_decl_name(sym->declaration->get_parent()),
+            get_decl_scope(sym->declaration),
             sym->declaration->position()
         };
     } 
 
     /** Gather together the scope ranges for all of our scope-owning declarations */
-    auto make_scope_map(const cpp2::sema& sema) -> diagnostic_scope_map {
-        diagnostic_scope_map result  = {};
+    auto make_scope_map(const cpp2::sema& sema) -> diagnostic_scope_map 
+    {
+        diagnostic_scope_map result = {};
         auto current = std::string();
 
         for(auto& s : sema.symbols) 
@@ -96,13 +117,16 @@ namespace cpp2 {
                 break; case symbol::active::declaration: 
                 {
                     auto const& sym = std::get<symbol::active::declaration>(s.sym);
-                    assert (sym.declaration);
-                    if( sym.declaration->is_function() || 
+                    if (sym.declaration == nullptr) break;
+
+                    if (sym.declaration->is_function() || 
                         sym.declaration->is_namespace() || 
                         sym.declaration->is_type() )
                     {
                         if( sym.identifier == nullptr ) break;
-                        current = sym.identifier->to_string();
+                        // Grab all parent scopes here to use for the scope map entry
+                        auto scope = get_decl_scope(sym.declaration);
+                        current = scope + dot(scope) + sym.identifier->to_string();
                     }
                 }
 
