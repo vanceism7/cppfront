@@ -97,7 +97,10 @@ namespace cpp2 {
                 {
                     auto const& sym = std::get<symbol::active::declaration>(s.sym);
                     assert (sym.declaration);
-                    if( sym.declaration->is_function() || sym.declaration->is_namespace() ) {
+                    if( sym.declaration->is_function() || 
+                        sym.declaration->is_namespace() || 
+                        sym.declaration->is_type() )
+                    {
                         if( sym.identifier == nullptr ) break;
                         current = sym.identifier->to_string();
                     }
@@ -110,7 +113,6 @@ namespace cpp2 {
                     auto const& sym = std::get<symbol::active::compound>(s.sym);
                     if (sym.kind_ == sym.is_scope && sym.start) {
                         auto c = sym.compound;
-                        std::cout << c->position().to_string() << ", " << c->close_brace.to_string();
                         result[current] = diagnostic_scope_range_t{c->open_brace, c->close_brace};
                     }
                 }
@@ -166,31 +168,31 @@ namespace cpp2 {
                 << "\"scope\": \"" << d.scope << "\", "
                 << "\"kind\": \"" << d.kind << "\", "
                 << "\"lineno\": " << d.position.lineno << ", "
-                << "\"colno\": " << d.position.colno << "},";
+                << "\"colno\": " << d.position.colno << "}\n,";
         }
         
         // Print out error entries to json
-        o << "], \"errors\": [";
+        o << "],\n \"errors\": [";
         for(auto& e : diagnostics.errors) {
             o
                 << "{\"symbol\": \"" << e.symbol << "\", "
                 << "\"lineno\": " << e.where.lineno << ", "
                 << "\"colno\": " << e.where.colno << ", "
-                << "\"msg\": \"" << sanitize_for_json(e.msg) << "\"},";
+                << "\"msg\": \"" << sanitize_for_json(e.msg) << "\"}\n,";
         }
 
         // Print out the our scope's source ranges as a map/object where:
         // keys   - are the scope symbol names,
         // values - are their source range
         //
-        o << "], \"scopes\": {";
+        o << "],\n \"scopes\": {";
         for(auto& s : diagnostics.scope_map) {
             o
                 << "\"" << s.first << "\":"
                 << "{\"start\": { \"lineno\": " << s.second.start.lineno << ", "
                 << "\"colno\": " << s.second.start.colno << "},"
                 << "\"end\": { \"lineno\": " << s.second.end.lineno << ", "
-                << "\"colno\": " << s.second.end.colno << "}},";
+                << "\"colno\": " << s.second.end.colno << "}}\n,";
         }
 
         o << "}}";
