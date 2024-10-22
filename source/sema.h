@@ -1243,7 +1243,7 @@ private:
                         "local variable " + name
                             + " must be initialized before " + sym.identifier->to_string()
                             + " (local variables must be initialized in the order they are declared)",
-                        name
+                        sym.identifier->to_string()
                     );
                     return false;
                 }
