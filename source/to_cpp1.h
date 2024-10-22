@@ -7203,14 +7203,14 @@ public:
     //-----------------------------------------------------------------------
     //  diagnostics_print
     //
-    auto diagnostics_print() const  
+    auto diagnostics_print(std::string const& file) const  
         -> void
     {
         if (source_loaded) 
         {
-            auto out_file  = std::ofstream{ sourcefile+"-diagnostics"  };
+            auto outfile  = std::ofstream{ file == "" ? "diagnostics.json" : file };
             auto diagnostics = get_diagnostics(sema);
-            print_diagnostics(out_file, diagnostics);
+            print_diagnostics(outfile, diagnostics);
         }
     }
 
