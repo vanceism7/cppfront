@@ -186,23 +186,27 @@ namespace cpp2 {
 
         // Print out symbol info to json
         o << "{\"symbols\": [";
-        for(auto& d : diagnostics.symbols) {
+        for(auto i = 0; auto& d : diagnostics.symbols) {
+            ++i;
             o 
                 << "{ \"symbol\": \"" << d.symbol << "\", "
                 << "\"scope\": \"" << d.scope << "\", "
                 << "\"kind\": \"" << d.kind << "\", "
                 << "\"lineno\": " << d.position.lineno << ", "
-                << "\"colno\": " << d.position.colno << "}\n,";
+                << "\"colno\": " << d.position.colno 
+                << (i < diagnostics.symbols.size() ? "},\n" : "}\n");
         }
         
         // Print out error entries to json
         o << "],\n \"errors\": [";
-        for(auto& e : diagnostics.errors) {
+        for(auto i = 0; auto& e : diagnostics.errors) {
+            ++i;
             o
                 << "{\"symbol\": \"" << e.symbol << "\", "
                 << "\"lineno\": " << e.where.lineno << ", "
                 << "\"colno\": " << e.where.colno << ", "
-                << "\"msg\": \"" << sanitize_for_json(e.msg) << "\"}\n,";
+                << "\"msg\": \"" << sanitize_for_json(e.msg) 
+                << (i < diagnostics.errors.size() ? "\"},\n" : "}\n");
         }
 
         // Print out the our scope's source ranges as a map/object where:
@@ -210,13 +214,15 @@ namespace cpp2 {
         // values - are their source range
         //
         o << "],\n \"scopes\": {";
-        for(auto& s : diagnostics.scope_map) {
+        for(auto i = 0; auto& s : diagnostics.scope_map) {
+            ++i;
             o
                 << "\"" << s.first << "\":"
                 << "{\"start\": { \"lineno\": " << s.second.start.lineno << ", "
                 << "\"colno\": " << s.second.start.colno << "},"
                 << "\"end\": { \"lineno\": " << s.second.end.lineno << ", "
-                << "\"colno\": " << s.second.end.colno << "}}\n,";
+                << "\"colno\": " << s.second.end.colno 
+                << (i < diagnostics.scope_map.size() ? "}},\n" : "}}\n");
         }
 
         o << "}}";
