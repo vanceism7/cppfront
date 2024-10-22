@@ -206,7 +206,7 @@ namespace cpp2 {
                 << "\"lineno\": " << e.where.lineno << ", "
                 << "\"colno\": " << e.where.colno << ", "
                 << "\"msg\": \"" << sanitize_for_json(e.msg) 
-                << (i < diagnostics.errors.size() ? "\"},\n" : "}\n");
+                << (i < diagnostics.errors.size() ? "\"},\n" : "\"}\n");
         }
 
         // Print out the our scope's source ranges as a map/object where:
