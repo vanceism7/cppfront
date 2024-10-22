@@ -14,6 +14,7 @@
 #define CPP2_TO_CPP1_H
 
 #include "sema.h"
+#include "diagnostics.h"
 #include <filesystem>
 
 namespace cpp2 {
@@ -4413,7 +4414,8 @@ public:
         {
             errors.emplace_back(
                 decl.position(),
-                "a type's implementation may not declare a name that is the same as (i.e., shadows) a type scope name - for example, a type scope function's local variable may not have the same as one of the type's members"
+                "a type's implementation may not declare a name that is the same as (i.e., shadows) a type scope name - for example, a type scope function's local variable may not have the same as one of the type's members",
+                decl.identifier->to_string()
             );
             return false;
         }
@@ -7187,6 +7189,22 @@ public:
 
             auto out_symbols = std::ofstream{ sourcefile+"-symbols" };
             sema.debug_print  ( out_symbols );
+        }
+    }
+
+
+
+    //-----------------------------------------------------------------------
+    //  diagnostics_print
+    //
+    auto diagnostics_print(std::string const& file) const  
+        -> void
+    {
+        if (source_loaded) 
+        {
+            auto outfile  = std::ofstream{ file == "" ? "diagnostics.json" : file };
+            auto diagnostics = get_diagnostics(sema);
+            print_diagnostics(outfile, diagnostics);
         }
     }
 

@@ -20,6 +20,15 @@ static cpp2::cmdline_processor::register_flag cmd_debug(
     []{ flag_debug_output = true; }
 );
 
+static auto flag_diagnostics = std::string();
+static cpp2::cmdline_processor::register_flag cmd_diagnostics(
+    9,
+    "diagnostics outfile",
+    "Emit compiler diagnostics output to outfile (or diagnostics.json if not specified)",
+    nullptr,
+    [](std::string const& output){ flag_diagnostics = output; }
+);
+
 static auto flag_quiet = false;
 static cpp2::cmdline_processor::register_flag cmd_quiet(
     9,
@@ -157,9 +166,14 @@ auto main(
             exit_status = EXIT_FAILURE;
         }
 
-        //  And, if requested, the debug information
+        //  if requested, the debug information
         if (flag_debug_output) {
             c.debug_print();
+        }
+
+        //  And, if requested, the diagnostics information
+        if (flag_diagnostics != "") {
+            c.diagnostics_print(flag_diagnostics);
         }
     }
 
