@@ -84,7 +84,7 @@ namespace cpp2 {
         std::string result = {};
         auto parent = decl->get_parent();
         
-        while(parent != nullptr) {
+        while(parent != nullptr && parent->identifier != nullptr) {
             result = parent->identifier->to_string() + dot(result) + result;
             parent = parent->get_parent();
         }
